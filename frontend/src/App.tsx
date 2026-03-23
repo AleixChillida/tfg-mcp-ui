@@ -1,40 +1,132 @@
-import { useState } from 'react'
-import './App.css'
+import { useMemo, useState } from "react";
+import { HttpAgent } from "@ag-ui/client";
+import "./App.css";
+
+type UiMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+};
 
 function App() {
-  const [message, setMessage] = useState('Sin comprobar')
-  const [loading, setLoading] = useState(false)
+  const [uiMessages, setUiMessages] = useState<UiMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const checkBackend = async () => {
+  const agent = useMemo(
+    () =>
+      new HttpAgent({
+        url: "http://127.0.0.1:8000/agui",
+        threadId: "tfg-thread-1",
+      }),
+    []
+  );
+
+  const sendMessage = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+
+    const userMessage: UiMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: text,
+    };
+
+    setUiMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setLoading(true);
+
+    agent.messages.push({
+      id: userMessage.id,
+      role: "user",
+      content: text,
+    });
+
+    const assistantMessageId = crypto.randomUUID();
+
     try {
-      setLoading(true)
-
-      const response = await fetch('http://127.0.0.1:8000/')
-      const data = await response.json()
-
-      setMessage(data.message)
+      await agent.runAgent(
+        {
+          runId: crypto.randomUUID(),
+        },
+        {
+          onTextMessageStartEvent() {
+            setUiMessages((prev) => [
+              ...prev,
+              {
+                id: assistantMessageId,
+                role: "assistant",
+                content: "",
+              },
+            ]);
+          },
+          onTextMessageContentEvent({ event }) {
+            setUiMessages((prev) =>
+              prev.map((message) =>
+                message.id === assistantMessageId
+                  ? { ...message, content: message.content + event.delta }
+                  : message
+              )
+            );
+          },
+          onRunFinishedEvent() {
+            setLoading(false);
+          },
+        }
+      );
     } catch (error) {
-      setMessage('Error conectando con el backend')
-      console.error(error)
-    } finally {
-      setLoading(false)
+      console.error(error);
+      setUiMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: "Error conectando con el backend AG-UI.",
+        },
+      ]);
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'Arial, sans-serif' }}>
+    <div className="app">
       <h1>TFG MCP UI</h1>
-      <p>Prueba de conexión frontend-backend</p>
+      <p className="subtitle">MVP de texto sobre AG-UI</p>
 
-      <button onClick={checkBackend} disabled={loading}>
-        {loading ? 'Comprobando...' : 'Comprobar backend'}
-      </button>
+      <div className="chat-box">
+        {uiMessages.length === 0 && (
+          <p className="empty-state">Escribe un mensaje para probar AG-UI.</p>
+        )}
 
-      <p style={{ marginTop: '1rem' }}>
-        <strong>Respuesta del backend:</strong> {message}
-      </p>
+        {uiMessages.map((message) => (
+          <div
+            key={message.id}
+            className={`message ${message.role === "user" ? "user" : "assistant"}`}
+          >
+            <strong>{message.role === "user" ? "Tú" : "Asistente"}:</strong>{" "}
+            {message.content}
+          </div>
+        ))}
+      </div>
+
+      <div className="input-row">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Escribe tu mensaje..."
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              sendMessage();
+            }
+          }}
+        />
+        <button onClick={sendMessage} disabled={loading}>
+          {loading ? "Enviando..." : "Enviar"}
+        </button>
+      </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
