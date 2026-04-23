@@ -16,7 +16,7 @@ function App() {
   const agent = useMemo(
     () =>
       new HttpAgent({
-        url: "http://127.0.0.1:8000/agui",
+        url: import.meta.env.VITE_AGUI_URL ?? "http://127.0.0.1:8000/agui",
         threadId: "tfg-thread-1",
       }),
     []
