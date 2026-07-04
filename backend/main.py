@@ -1,3 +1,8 @@
+import asyncio
+import uuid
+from pathlib import Path
+from dotenv import load_dotenv
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -13,43 +18,41 @@ from ag_ui.core import (
 )
 from ag_ui.encoder import EventEncoder
 
-import asyncio
-import uuid
+from agents.chat_agent import ChatAgent
+
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+
 
 app = FastAPI()
+
+chat_agent = ChatAgent()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 def read_root():
     return {"message": "Backend funcionando"}
+
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
+
 @app.post("/agui")
 async def agui_endpoint(input_data: RunAgentInput, request: Request):
     accept_header = request.headers.get("accept")
     encoder = EventEncoder(accept=accept_header)
-
-    # Para este MVP solo usamos el último mensaje del usuario
-    user_text = ""
-    if input_data.messages:
-        last_message = input_data.messages[-1]
-        content = getattr(last_message, "content", "")
-        user_text = content if isinstance(content, str) else str(content)
-
-    response_text = f"Respuesta AG-UI simulada: has escrito '{user_text}'."
 
     async def event_generator():
         message_id = str(uuid.uuid4())
@@ -69,6 +72,14 @@ async def agui_endpoint(input_data: RunAgentInput, request: Request):
                 role="assistant",
             )
         )
+
+        try:
+            response_text = await chat_agent.generate_response(input_data.messages)
+        except Exception as error:
+            response_text = (
+                "Ha ocurrido un error generando la respuesta del asistente: "
+                f"{error}"
+            )
 
         for word in response_text.split(" "):
             yield encoder.encode(

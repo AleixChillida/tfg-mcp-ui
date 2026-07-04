@@ -1,3 +1,5 @@
 fastapi
 uvicorn[standard]
-ag-ui
+ag-ui-protocol
+python-dotenv
+pytest
