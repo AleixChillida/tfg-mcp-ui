@@ -76,9 +76,12 @@ async def agui_endpoint(input_data: RunAgentInput, request: Request):
         try:
             response_text = await chat_agent.generate_response(input_data.messages)
         except Exception as error:
+            print("ERROR generando respuesta del asistente:", repr(error))
+
             response_text = (
-                "Ha ocurrido un error generando la respuesta del asistente: "
-                f"{error}"
+                "Ha ocurrido un error generando la respuesta del asistente. "
+                f"Tipo: {type(error).__name__}. "
+                f"Detalle: {repr(error)}"
             )
 
         for word in response_text.split(" "):
