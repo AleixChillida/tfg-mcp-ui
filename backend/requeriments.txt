@@ -4,3 +4,4 @@ ag-ui-protocol
 python-dotenv
 pytest
 httpx
+mcp

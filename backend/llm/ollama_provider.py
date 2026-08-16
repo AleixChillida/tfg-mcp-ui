@@ -90,18 +90,26 @@ class OllamaProvider:
         return content.strip()
 
     def _build_messages(self, messages: Sequence[ChatMessage]) -> list[dict[str, str]]:
-        ollama_messages: list[dict[str, str]] = [
-            {
-                "role": "system",
-                "content": (
-                    "Eres el asistente conversacional integrado en una interfaz web "
-                    "llamada TFG MCP UI. "
-                    "Responde en el mismo idioma que el usuario. "
-                    "Sé claro, breve y natural. "
-                    "No digas que eres Ollama ni menciones detalles internos del backend."
-                ),
-            }
-        ]
+        has_system_message = any(
+            message.role.lower().strip() == "system"
+            for message in messages
+        )
+
+        ollama_messages: list[dict[str, str]] = []
+
+        if not has_system_message:
+            ollama_messages.append(
+                {
+                    "role": "system",
+                    "content": (
+                        "Eres el asistente conversacional integrado en una interfaz web "
+                        "llamada TFG MCP UI. "
+                        "Responde en el mismo idioma que el usuario. "
+                        "Sé claro, breve y natural. "
+                        "No digas que eres Ollama ni menciones detalles internos del backend."
+                    ),
+                }
+            )
 
         for message in messages:
             role = message.role.lower().strip()
