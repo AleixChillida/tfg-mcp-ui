@@ -125,3 +125,9 @@ tfg-mcp-ui-ag-ui
 tfg-mcp-ui-copilotkit-genui
 tfg-mcp-ui-mcp-apps
 ```
+
+## Llicència
+
+El codi desenvolupat específicament per aquest TFG es distribueix sota la
+llicència MIT. Les dependències i projectes de tercers mantenen les seves
+respectives llicències.
