@@ -1,0 +1,7 @@
+fastapi>=0.116,<1
+uvicorn[standard]>=0.35,<1
+python-dotenv>=1.1,<2
+httpx>=0.28,<1
+mcp>=1.28.1,<2
+fastmcp==3.4.7
+pytest>=8,<9

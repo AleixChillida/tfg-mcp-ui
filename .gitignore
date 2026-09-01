@@ -1,7 +1,35 @@
-backend/.venv/
-frontend/node_modules/
-frontend/dist/
-__pycache__/
-*.pyc
+# Python
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+
+# Entornos y secretos
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.sample
+
+# Node / Vite
+**/node_modules/
+**/dist/
+**/dist-ssr/
+
+# Logs
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+
+# IDE / sistema operativo
 .vscode/
-backend/.env
+.idea/
+.DS_Store
+Thumbs.db
+
+# Cobertura / temporales
+.coverage
+htmlcov/
+coverage/

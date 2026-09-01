@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://unpkg.com; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; font-src 'none'; base-uri 'none'; object-src 'none'" />
+  <title>Uyuni MCP App</title>
+  <style>
+    :root {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color-scheme: light dark;
+      --bg: #ffffff;
+      --surface: #f7f9fc;
+      --surface-2: #eef3f8;
+      --text: #172033;
+      --muted: #667085;
+      --border: #dfe6ee;
+      --accent: #246bfe;
+      --accent-2: #12a37f;
+      --accent-soft: #eaf1ff;
+      --good: #0e9f6e;
+      --warn: #d97706;
+      --shadow: 0 18px 42px rgba(22, 34, 56, .10);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111722;
+        --surface: #171f2c;
+        --surface-2: #202b3a;
+        --text: #f2f5f8;
+        --muted: #aab6c5;
+        --border: #2b394a;
+        --accent: #7aa5ff;
+        --accent-2: #50d6b1;
+        --accent-soft: #1d3157;
+        --shadow: 0 18px 42px rgba(0, 0, 0, .28);
+      }
+    }
+    :root[data-theme="light"] {
+      --bg: #ffffff;
+      --surface: #f7f9fc;
+      --surface-2: #eef3f8;
+      --text: #172033;
+      --muted: #667085;
+      --border: #dfe6ee;
+      --accent: #246bfe;
+      --accent-2: #12a37f;
+      --accent-soft: #eaf1ff;
+      --shadow: 0 18px 42px rgba(22, 34, 56, .10);
+    }
+    :root[data-theme="dark"] {
+      --bg: #111722;
+      --surface: #171f2c;
+      --surface-2: #202b3a;
+      --text: #f2f5f8;
+      --muted: #aab6c5;
+      --border: #2b394a;
+      --accent: #7aa5ff;
+      --accent-2: #50d6b1;
+      --accent-soft: #1d3157;
+      --shadow: 0 18px 42px rgba(0, 0, 0, .28);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: transparent; color: var(--text); overflow: hidden; }
+    body { padding: 4px; }
+    button, input { font: inherit; }
+    .shell {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--bg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .head {
+      padding: 18px 18px 14px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(145deg, var(--bg), var(--surface));
+    }
+    .eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .dot { width: 9px; height: 9px; border-radius: 999px; background: var(--accent-2); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-2) 14%, transparent); }
+    .badge { color: var(--muted); font-size: 12px; font-weight: 650; letter-spacing: .02em; }
+    h1 { margin: 0; font-size: clamp(17px, 2.5vw, 22px); line-height: 1.18; letter-spacing: -.02em; }
+    .sub { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+    .timing { flex: none; text-align: right; font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .timing strong { display: block; color: var(--text); font-size: 13px; }
+    .toolbar { padding: 11px 14px; display: flex; gap: 7px; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--surface); }
+    .view-btn {
+      border: 1px solid var(--border); background: var(--bg); color: var(--muted);
+      padding: 7px 10px; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 650;
+      transition: .16s ease;
+    }
+    .view-btn:hover { transform: translateY(-1px); border-color: var(--accent); color: var(--accent); }
+    .view-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .content { padding: 15px; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+    .metric { padding: 14px; border-radius: 14px; border: 1px solid var(--border); background: linear-gradient(145deg, var(--bg), var(--surface)); min-height: 92px; }
+    .metric-label { color: var(--muted); font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; }
+    .metric-value { margin-top: 7px; font-size: 25px; font-weight: 780; letter-spacing: -.04em; }
+    .metric-hint { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .table-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .search { width: min(320px, 100%); border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 9px 11px; border-radius: 10px; outline: none; }
+    .search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent); }
+    .count { font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .table-wrap { overflow-x: auto; overflow-y: visible; max-height: none; border: 1px solid var(--border); border-radius: 13px; }
+    table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 12px; }
+    th { position: sticky; top: 0; z-index: 2; text-align: left; background: var(--surface-2); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .045em; padding: 10px 11px; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
+    td { padding: 10px 11px; border-bottom: 1px solid var(--border); vertical-align: top; max-width: 260px; overflow-wrap: anywhere; }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+    .chart-card { border: 1px solid var(--border); border-radius: 14px; padding: 12px 12px 7px; background: var(--surface); overflow: hidden; }
+    .chart-title { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+    svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .axis { stroke: var(--border); stroke-width: 1; }
+    .bar { fill: var(--accent); opacity: .88; }
+    .bar:hover { opacity: 1; }
+    .line { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+    .point { fill: var(--bg); stroke: var(--accent); stroke-width: 2.3; }
+    .svg-label { fill: var(--muted); font-size: 10px; }
+    .donut-layout { display: grid; grid-template-columns: minmax(170px, 240px) 1fr; gap: 18px; align-items: center; }
+    .donut { width: min(220px, 60vw); aspect-ratio: 1; border-radius: 50%; margin: auto; position: relative; }
+    .donut::after { content: ""; position: absolute; inset: 25%; background: var(--bg); border-radius: 50%; box-shadow: inset 0 0 0 1px var(--border); }
+    .legend { display: grid; gap: 8px; }
+    .legend-row { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 8px; font-size: 12px; }
+    .swatch { width: 9px; height: 9px; border-radius: 3px; }
+    .legend-row span:nth-child(2) { color: var(--muted); overflow-wrap: anywhere; }
+    .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 9px; }
+    .detail-item { padding: 11px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+    .detail-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .055em; margin-bottom: 5px; }
+    .detail-value { font-size: 13px; overflow-wrap: anywhere; }
+    .timeline { position: relative; display: grid; gap: 0; }
+    .timeline::before { content: ""; position: absolute; left: 6px; top: 9px; bottom: 9px; width: 1px; background: var(--border); }
+    .timeline-item { position: relative; padding: 0 0 16px 27px; }
+    .timeline-item:last-child { padding-bottom: 0; }
+    .timeline-item::before { content: ""; position: absolute; left: 1px; top: 5px; width: 11px; height: 11px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--bg), 0 0 0 5px var(--border); }
+    .timeline-time { color: var(--muted); font-size: 10px; margin-bottom: 3px; }
+    .timeline-title { font-size: 13px; font-weight: 680; }
+    .timeline-status { display: inline-block; margin-top: 5px; padding: 3px 7px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 10px; }
+    .empty { text-align: center; padding: 34px 16px; }
+    .empty-icon { width: 46px; height: 46px; display: grid; place-items: center; margin: 0 auto 11px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); font-size: 22px; }
+    .empty strong { display: block; margin-bottom: 5px; }
+    .empty p { margin: 0; color: var(--muted); font-size: 12px; }
+    .raw { margin: 0; max-height: 390px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; font: 11px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .notice { margin-top: 10px; padding: 9px 10px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--warn) 35%, var(--border)); color: var(--muted); background: color-mix(in srgb, var(--warn) 7%, var(--surface)); font-size: 11px; }
+    .foot { display: flex; justify-content: space-between; gap: 10px; padding: 10px 15px 13px; border-top: 1px solid var(--border); color: var(--muted); font-size: 10px; }
+    @media (max-width: 620px) {
+      .head { flex-direction: column; }
+      .timing { text-align: left; }
+      .donut-layout { grid-template-columns: 1fr; }
+      .content { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell" id="shell">
+    <header class="head">
+      <div>
+        <div class="eyebrow"><span class="dot"></span><span class="badge">MCP App · ui:// · vista elegida por IA</span></div>
+        <h1 id="title">Consultando Uyuni…</h1>
+        <p class="sub" id="subtitle">Esperando el resultado de la herramienta MCP.</p>
+      </div>
+      <div class="timing" id="timing"></div>
+    </header>
+    <nav class="toolbar" id="toolbar" hidden></nav>
+    <section class="content" id="content">
+      <div class="empty"><div class="empty-icon">⌁</div><strong>Preparando visualización</strong><p>La vista llega como recurso <code>ui://</code> desde el servidor MCP.</p></div>
+    </section>
+    <footer class="foot"><span id="source">Uyuni MCP</span><span id="tool"></span></footer>
+  </main>
+
+  <script type="module">
+    import { App } from "https://unpkg.com/@modelcontextprotocol/ext-apps@1.7.5/app-with-deps";
+
+    const app = new App(
+      { name: "Uyuni TFG Dashboard", version: "1.0.0" },
+      { availableDisplayModes: ["inline"] },
+      { autoResize: false },
+    );
+
+    const state = { data: null, view: null, query: "", sortKey: null, sortDir: 1 };
+    const palette = ["#246bfe", "#12a37f", "#8b5cf6", "#f59e0b", "#ef4444", "#06b6d4", "#ec4899", "#64748b"];
+    const viewLabels = { metrics: "Métricas", table: "Tabla", bar: "Barras", line: "Líneas", donut: "Distribución", detail: "Detalle", timeline: "Timeline", empty: "Vacío", raw: "Texto" };
+
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined && text !== null) node.textContent = String(text);
+      return node;
+    }
+
+    function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
+    function formatValue(value) {
+      if (value === null || value === undefined || value === "") return "—";
+      if (typeof value === "number") return new Intl.NumberFormat("es-ES", { maximumFractionDigits: 2 }).format(value);
+      return String(value);
+    }
+    function cssEsc(value) { return CSS.escape(String(value)); }
+
+    function requestSize() {
+      requestAnimationFrame(() => {
+        // Measure natural content height rather than the current iframe viewport.
+        // This lets the host expand the MCP App and keeps vertical scrolling in
+        // the parent chat only.
+        const root = document.documentElement;
+        const previousHeight = root.style.height;
+        root.style.height = "max-content";
+        const h = Math.max(260, Math.ceil(root.getBoundingClientRect().height + 8));
+        root.style.height = previousHeight;
+        app.sendSizeChanged({ height: h });
+      });
+    }
+
+    function applyHostContext(ctx) {
+      if (ctx?.theme === "light" || ctx?.theme === "dark") {
+        document.documentElement.dataset.theme = ctx.theme;
+      }
+    }
+
+    function renderToolbar() {
+      const bar = document.getElementById("toolbar");
+      bar.replaceChildren();
+      const views = state.data?.views || [];
+      bar.hidden = views.length <= 1;
+      views.forEach((view) => {
+        const btn = el("button", "view-btn" + (view === state.view ? " active" : ""), viewLabels[view] || view);
+        btn.type = "button";
+        btn.addEventListener("click", () => { state.view = view; render(); });
+        bar.appendChild(btn);
+      });
+    }
+
+    function renderMetrics(root) {
+      const grid = el("div", "metrics");
+      (state.data.metrics || []).forEach((metric) => {
+        const card = el("article", "metric");
+        card.append(el("div", "metric-label", metric.label), el("div", "metric-value", formatValue(metric.value)));
+        if (metric.hint) card.append(el("div", "metric-hint", metric.hint));
+        grid.append(card);
+      });
+      root.append(grid);
+    }
+
+    function filteredRows() {
+      const rows = [...(state.data.rows || [])];
+      const q = state.query.trim().toLowerCase();
+      let filtered = q ? rows.filter(row => Object.values(row).some(v => String(v ?? "").toLowerCase().includes(q))) : rows;
+      if (state.sortKey) {
+        const key = state.sortKey;
+        filtered.sort((a, b) => {
+          const av = a[key], bv = b[key];
+          const an = Number(av), bn = Number(bv);
+          let cmp;
+          if (Number.isFinite(an) && Number.isFinite(bn) && av !== "" && bv !== "") cmp = an - bn;
+          else cmp = String(av ?? "").localeCompare(String(bv ?? ""), "es", { numeric: true, sensitivity: "base" });
+          return cmp * state.sortDir;
+        });
+      }
+      return filtered;
+    }
+
+    function renderTable(root) {
+      const top = el("div", "table-top");
+      const input = el("input", "search");
+      input.type = "search";
+      input.placeholder = "Buscar en resultados…";
+      input.value = state.query;
+      const count = el("span", "count");
+      input.addEventListener("input", () => { state.query = input.value; renderTableBody(root, top, count); });
+      top.append(input, count);
+      root.append(top);
+      const wrap = el("div", "table-wrap");
+      wrap.id = "table-wrap";
+      root.append(wrap);
+      renderTableBody(root, top, count);
+    }
+
+    function renderTableBody(root, top, count) {
+      const old = root.querySelector("#table-wrap");
+      if (!old) return;
+      const wrap = el("div", "table-wrap");
+      wrap.id = "table-wrap";
+      const rows = filteredRows();
+      count.textContent = `${rows.length} de ${state.data.totalRows ?? rows.length}`;
+      const table = document.createElement("table");
+      const thead = document.createElement("thead");
+      const trh = document.createElement("tr");
+      (state.data.columns || []).forEach(col => {
+        const suffix = state.sortKey === col.key ? (state.sortDir > 0 ? " ↑" : " ↓") : "";
+        const th = el("th", "", `${col.label}${suffix}`);
+        th.addEventListener("click", () => {
+          if (state.sortKey === col.key) state.sortDir *= -1;
+          else { state.sortKey = col.key; state.sortDir = 1; }
+          render();
+        });
+        trh.append(th);
+      });
+      thead.append(trh); table.append(thead);
+      const tbody = document.createElement("tbody");
+      rows.forEach(row => {
+        const tr = document.createElement("tr");
+        (state.data.columns || []).forEach(col => tr.append(el("td", "", formatValue(row[col.key]))));
+        tbody.append(tr);
+      });
+      table.append(tbody); wrap.append(table); old.replaceWith(wrap); requestSize();
+    }
+
+    function renderBar(root) {
+      const chart = state.data.chart;
+      if (!chart) return renderFallback(root, "No hay una serie numérica fiel para dibujar barras.");
+      const card = el("div", "chart-card");
+      card.append(el("p", "chart-title", `${chart.yLabel} por ${chart.xLabel}`));
+      const w = 760, h = 330, left = 48, right = 18, top = 15, bottom = 78;
+      const values = chart.values.map(Number); const max = Math.max(...values, 1);
+      const innerW = w-left-right, innerH = h-top-bottom, step = innerW / values.length, bw = Math.max(5, step * .64);
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      const axis = document.createElementNS(svg.namespaceURI, "line"); axis.setAttribute("x1", left); axis.setAttribute("x2", w-right); axis.setAttribute("y1", h-bottom); axis.setAttribute("y2", h-bottom); axis.setAttribute("class", "axis"); svg.append(axis);
+      values.forEach((v, i) => {
+        const bh = innerH * (v/max), x = left + i*step + (step-bw)/2, y = top + innerH-bh;
+        const rect = document.createElementNS(svg.namespaceURI, "rect"); rect.setAttribute("x", x); rect.setAttribute("y", y); rect.setAttribute("width", bw); rect.setAttribute("height", Math.max(bh, 1)); rect.setAttribute("rx", 5); rect.setAttribute("class", "bar");
+        const title = document.createElementNS(svg.namespaceURI, "title"); title.textContent = `${chart.labels[i]}: ${formatValue(v)}`; rect.append(title); svg.append(rect);
+        const label = document.createElementNS(svg.namespaceURI, "text"); label.setAttribute("x", x+bw/2); label.setAttribute("y", h-bottom+14); label.setAttribute("text-anchor", "end"); label.setAttribute("transform", `rotate(-38 ${x+bw/2} ${h-bottom+14})`); label.setAttribute("class", "svg-label"); label.textContent = String(chart.labels[i]).slice(0, 18); svg.append(label);
+      });
+      card.append(svg); root.append(card);
+    }
+
+    function renderLine(root) {
+      const chart = state.data.chart;
+      if (!chart) return renderFallback(root, "No hay una serie numérica fiel para dibujar líneas.");
+      const card = el("div", "chart-card"); card.append(el("p", "chart-title", `${chart.yLabel} · secuencia de ${chart.xLabel}`));
+      const w=760,h=330,left=48,right=20,top=22,bottom=78; const vals=chart.values.map(Number); const max=Math.max(...vals,1), min=Math.min(...vals,0), range=Math.max(max-min,1); const innerW=w-left-right,innerH=h-top-bottom;
+      const pts=vals.map((v,i)=>({x:left+(vals.length===1?0:i*innerW/(vals.length-1)),y:top+innerH-((v-min)/range)*innerH}));
+      const svg=document.createElementNS("http://www.w3.org/2000/svg","svg"); svg.setAttribute("viewBox",`0 0 ${w} ${h}`);
+      const axis=document.createElementNS(svg.namespaceURI,"line"); axis.setAttribute("x1",left);axis.setAttribute("x2",w-right);axis.setAttribute("y1",h-bottom);axis.setAttribute("y2",h-bottom);axis.setAttribute("class","axis");svg.append(axis);
+      const path=document.createElementNS(svg.namespaceURI,"path"); path.setAttribute("d",pts.map((p,i)=>`${i?"L":"M"}${p.x},${p.y}`).join(" "));path.setAttribute("class","line");svg.append(path);
+      pts.forEach((p,i)=>{const c=document.createElementNS(svg.namespaceURI,"circle");c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);c.setAttribute("r",4);c.setAttribute("class","point");const t=document.createElementNS(svg.namespaceURI,"title");t.textContent=`${chart.labels[i]}: ${formatValue(vals[i])}`;c.append(t);svg.append(c);const lab=document.createElementNS(svg.namespaceURI,"text");lab.setAttribute("x",p.x);lab.setAttribute("y",h-bottom+14);lab.setAttribute("text-anchor","end");lab.setAttribute("transform",`rotate(-38 ${p.x} ${h-bottom+14})`);lab.setAttribute("class","svg-label");lab.textContent=String(chart.labels[i]).slice(0,18);svg.append(lab);});
+      card.append(svg); root.append(card);
+    }
+
+    function renderDonut(root) {
+      const data = state.data.distribution || [];
+      if (!data.length) return renderFallback(root, "Los datos no contienen una distribución categórica útil.");
+      const total = data.reduce((s,d)=>s+Number(d.value||0),0) || 1;
+      let current=0; const stops=[];
+      data.forEach((d,i)=>{const start=current; current += (Number(d.value||0)/total)*360; stops.push(`${palette[i%palette.length]} ${start}deg ${current}deg`);});
+      const layout=el("div","donut-layout"); const donut=el("div","donut"); donut.style.background=`conic-gradient(${stops.join(",")})`; layout.append(donut);
+      const legend=el("div","legend"); data.forEach((d,i)=>{const row=el("div","legend-row");const sw=el("span","swatch");sw.style.background=palette[i%palette.length];row.append(sw,el("span","",d.label),el("strong","",`${d.value} · ${Math.round(Number(d.value)/total*100)}%`));legend.append(row);}); layout.append(legend); root.append(layout);
+    }
+
+    function renderDetail(root) {
+      const grid=el("div","detail-grid"); (state.data.detail||[]).forEach(item=>{const card=el("div","detail-item");card.append(el("div","detail-label",item.label),el("div","detail-value",item.value));grid.append(card);}); root.append(grid);
+    }
+
+    function renderTimeline(root) {
+      const items=state.data.timeline||[]; if(!items.length) return renderFallback(root,"No se ha detectado un campo temporal representable.");
+      const timeline=el("div","timeline");items.forEach(item=>{const node=el("div","timeline-item");node.append(el("div","timeline-time",item.time),el("div","timeline-title",item.title));if(item.status)node.append(el("span","timeline-status",item.status));timeline.append(node);});root.append(timeline);
+    }
+
+    function renderEmpty(root) { const box=el("div","empty");box.append(el("div","empty-icon","✓"),el("strong","","Consulta correcta, sin resultados"),el("p","","Uyuni no ha devuelto elementos para esta petición."));root.append(box); }
+    function renderRaw(root) { root.append(el("pre","raw",state.data.rawPreview || "El resultado real se muestra en el mensaje de texto del asistente.")); }
+    function renderFallback(root, message) { const box=el("div","empty");box.append(el("div","empty-icon","↗"),el("strong","","Vista no aplicable"),el("p","",message));root.append(box); }
+
+    function render() {
+      if (!state.data) return;
+      document.getElementById("title").textContent = state.data.title || "Resultado Uyuni";
+      const selection = state.data.presentationSelection;
+      const baseSubtitle = state.data.empty
+        ? "La consulta no devolvió elementos."
+        : `${state.data.totalRows ?? state.data.detail?.length ?? 0} elementos preparados desde datos reales.`;
+      document.getElementById("subtitle").textContent = selection?.reason
+        ? `${baseSubtitle} IA → ${selection.selectedView}: ${selection.reason}`
+        : baseSubtitle;
+      document.getElementById("source").textContent = state.data.source || "Uyuni MCP";
+      document.getElementById("tool").textContent = state.data.toolName || "";
+      const timing = document.getElementById("timing"); timing.replaceChildren();
+      if (state.data.timing) {
+        timing.append(
+          el("strong","",`${Math.round(state.data.timing.adapterTotalMs)} ms`),
+          el("span","",`Uyuni MCP ${Math.round(state.data.timing.upstreamMcpMs)} ms`),
+          el("span","",`IA visual ${Math.round(state.data.timing.presentationLlmMs || 0)} ms`),
+        );
+      }
+      renderToolbar();
+      const root=document.getElementById("content");root.replaceChildren();
+      const view=state.view;
+      if(view==="metrics")renderMetrics(root); else if(view==="table")renderTable(root); else if(view==="bar")renderBar(root); else if(view==="line")renderLine(root); else if(view==="donut")renderDonut(root); else if(view==="detail")renderDetail(root); else if(view==="timeline")renderTimeline(root); else if(view==="empty")renderEmpty(root); else renderRaw(root);
+      if(state.data.notice)root.append(el("div","notice",state.data.notice));
+      requestSize();
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result?.structuredContent;
+      if (!data || typeof data !== "object") {
+        state.data = { title: "Resultado Uyuni", source: "Uyuni MCP", toolName: "", views: ["raw"], initialView: "raw", rawPreview: result?.content?.find?.(x => x.type === "text")?.text || "Sin contenido estructurado." };
+      } else {
+        state.data = data;
+      }
+      state.view = state.data.initialView || state.data.views?.[0] || "raw";
+      state.query = ""; state.sortKey = null; state.sortDir = 1;
+      render();
+    };
+
+    app.onhostcontextchanged = (ctx) => {
+      applyHostContext(ctx);
+      requestSize();
+    };
+    app.onteardown = async () => ({});
+    await app.connect();
+    applyHostContext(app.getHostContext?.());
+    requestSize();
+  </script>
+</body>
+</html>

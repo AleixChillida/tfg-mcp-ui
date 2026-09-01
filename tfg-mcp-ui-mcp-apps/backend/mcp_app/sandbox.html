@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MCP Apps sandbox proxy</title>
+  <style>
+    html, body { margin: 0; min-height: 100%; background: transparent; }
+    body { overflow: hidden; }
+    iframe { display: block; width: 100%; height: 260px; min-height: 240px; border: 0; background: transparent; overflow: hidden; }
+  </style>
+</head>
+<body>
+<script>
+(() => {
+  "use strict";
+
+  if (window.self === window.top) {
+    throw new Error("MCP Apps sandbox proxy must run inside an iframe.");
+  }
+
+  const referrer = document.referrer;
+  if (!referrer) {
+    throw new Error("Missing embedding referrer; refusing to start sandbox proxy.");
+  }
+
+  const hostOrigin = new URL(referrer).origin;
+  if (!/^http:\/\/(localhost|127\.0\.0\.1):5173$/.test(hostOrigin)) {
+    throw new Error(`Embedding origin not allowed: ${hostOrigin}`);
+  }
+
+  const ownOrigin = window.location.origin;
+  const inner = document.createElement("iframe");
+  inner.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
+  document.body.appendChild(inner);
+
+  const PROXY_READY = "ui/notifications/sandbox-proxy-ready";
+  const RESOURCE_READY = "ui/notifications/sandbox-resource-ready";
+  const SIZE_CHANGED = "ui/notifications/size-changed";
+
+  function permissionPolicy(permissions) {
+    if (!permissions || typeof permissions !== "object") return "";
+    const result = [];
+    if (permissions.camera) result.push("camera");
+    if (permissions.microphone) result.push("microphone");
+    if (permissions.geolocation) result.push("geolocation");
+    if (permissions.clipboardWrite) result.push("clipboard-write");
+    return result.join("; ");
+  }
+
+  window.addEventListener("message", (event) => {
+    if (event.source === window.parent) {
+      if (event.origin !== hostOrigin) return;
+
+      if (event.data?.method === RESOURCE_READY) {
+        const params = event.data.params || {};
+        if (typeof params.sandbox === "string") {
+          inner.setAttribute("sandbox", params.sandbox);
+        }
+        const allow = permissionPolicy(params.permissions);
+        if (allow) inner.setAttribute("allow", allow);
+
+        if (typeof params.html === "string") {
+          const doc = inner.contentDocument || inner.contentWindow?.document;
+          if (!doc) throw new Error("Unable to access inner MCP App document.");
+          doc.open();
+          doc.write(params.html);
+          doc.close();
+        }
+        return;
+      }
+
+      inner.contentWindow?.postMessage(event.data, "*");
+      return;
+    }
+
+    if (event.source === inner.contentWindow) {
+      // document.write + allow-same-origin keeps the inner view on the proxy
+      // origin. Accept "null" only as a defensive fallback for stricter UAs.
+      if (event.origin !== ownOrigin && event.origin !== "null") return;
+
+      // The MCP App lives in this inner iframe. Grow it to the exact height
+      // reported by the MCP Apps protocol so it never needs its own vertical
+      // scrollbar. The same notification is then forwarded to the host, which
+      // resizes the outer iframe as well.
+      if (event.data?.method === SIZE_CHANGED) {
+        const height = Number(event.data?.params?.height);
+        if (Number.isFinite(height) && height > 0) {
+          inner.style.height = `${Math.max(240, Math.ceil(height))}px`;
+        }
+      }
+
+      window.parent.postMessage(event.data, hostOrigin);
+    }
+  });
+
+  window.parent.postMessage(
+    { jsonrpc: "2.0", method: PROXY_READY, params: {} },
+    hostOrigin,
+  );
+})();
+</script>
+</body>
+</html>
